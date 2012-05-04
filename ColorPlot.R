@@ -1,0 +1,185 @@
+col <- read.csv("ColorPalettes.csv", stringsAsFactors=FALSE)
+sequential <- col[1:756,]
+diverging <- col[757:1323,]
+qualitative <- col[1324:1689,]
+
+#scatterplot3d(cols$R, cols$G, cols$B, type="h", color=cols[,4], pch=19)
+
+library(rgl)
+
+#where the pages will be saved:
+print(tempdir())
+
+propVar <- function(pca, components=1){
+  #proportion of variance explained by the first component
+  pv <- pca$sdev^2/sum(pca$sdev^2)[1] 
+  return(sum(pv[1:components]))
+}
+
+
+
+plotCols <- function(red,green,blue,pca=0, col=rgb(red/255, green/255, blue/255), ...){  
+  
+  #if on a [0,1] interval, shift to [0,255] interval
+  if (max(red, blue,green) < 1){
+    red <- red * 255
+    blue <- blue * 255
+    green <- green * 255
+  }
+  
+  plot3d(red, green, blue,          
+         xlab="Red", ylab="Green", zlab="Blue", 
+         type="l", lwd=2, col=col, xlim=c(0,255), ylim=c(0,255), zlim=c(0,255),...)
+  
+  plot3d(red, green, blue,           
+         type="p", add=TRUE, pch=19, size=6, col=col, ...)
+
+  X <- cbind(red,green,blue)
+  #from Hans Borchers, http://r.789695.n4.nabble.com/Fit-a-3-Dimensional-Line-to-Data-Points-td863596.html
+  N <- nrow(X) 
+  
+  meanX <- apply(X, 2, mean) 
+  Xpca   <- princomp(X) 
+  
+  if (pca==TRUE){
+    pca <- 1
+  }
+  
+  endpts <- list()
+  for (pc in 1:pca){    
+    dirVector <- Xpca$loadings[, pc] 
+    t <- c(min(Xpca$score[, pc])-.2, max(Xpca$score[, pc])+.2) 
+    endpts[[pc]] <- rbind(meanX + t[1]*dirVector, meanX + t[2]*dirVector)     
+  }
+  
+  if (pca){
+    for (pc in 1:pca){  
+      plot3d(endpts[[pc]][,1], endpts[[pc]][,2], endpts[[pc]][,3], type="l", add=TRUE, aspect=FALSE)
+    }
+    
+    pv <- propVar(Xpca, pca)
+    text3d(50,50,250, paste("R2 = ", round(pv,4), sep=""), aspect=FALSE)
+  }
+  
+  view3d(-100, 20, zoom=1.1)
+         
+  writeWebGL(dir=file.path(tempdir(), "webGL"), width=500)
+  return(Xpca)
+}
+
+#grey-scale
+palette <- sequential[748:756, 7:9]
+pca <- plotCols(palette$R,palette$G, palette$B, pca=1)
+
+#red
+palette <- sequential[706:714, 7:9]
+pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+
+#blue
+palette <- sequential[580:588, 7:9]
+pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+
+#purple
+palette <- sequential[538:546, 7:9]
+pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+
+#gnblu
+palette <- sequential[118:126, 7:9]
+pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+
+#rdpu
+palette <- sequential[328:336, 7:9]
+pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+
+#diverging
+palette <- diverging[118:126, 7:9]
+pca <-plotCols(palette$R,palette$G, palette$B, pca=2)
+
+
+#diverging -rdbu
+palette <- diverging[305:315, 7:9]
+pca <-plotCols(palette$R,palette$G, palette$B, pca=2)
+
+
+
+showAllSequential <- function(){
+  for (i in which(sequential[,2] == 9)){
+    palette <- sequential[i:(i+8), 7:9]
+    pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+    cat(i, ": ", propVar(pca,1), "\n")
+    readline()
+  }
+}
+
+showAllDivergent <- function(){
+  #all diverging series of 11
+  for (i in which(diverging[,2] == 11)){
+    palette <- diverging[i:(i+10), 7:9]
+    pca <-plotCols(palette$R,palette$G, palette$B, pca=2)
+    cat(i, ": ", propVar(pca,2), "\n")
+    readline()
+  }
+}
+
+
+mat <- matrix(rnorm(25), ncol=5)
+rownames(mat) <- colnames(mat) <- LETTERS[1:5]
+heatmap.r(mat,scale = "none", margins = c(4,4), col=rgb(palette/255))
+
+load("mat.rda")
+
+allSequential <- list()
+for (i in which(sequential[,2] == 9)){
+  palette <- sequential[i:(i+8), 7:9]
+  allSequential[[length(allSequential)+1]] <- palette
+}
+
+#make symmetrical
+diag(mat) <- 5.2
+mat[,1] <- mat[1,]
+mat[,2] <- mat[2,]
+mat[,3] <- mat[3,]
+mat[,4] <- mat[4,]
+mat[,5] <- mat[5,]
+mat <- mat - 1
+
+for(i in 1:length(allSequential)){
+  palette <- allSequential[[i]]
+  png(filename=paste("palette-sym/palette-", i,".png", sep=""),
+      width = 620, height = 620, units = "px",
+      pointsize = 12, bg = "white")
+  heatmap.r(mat,scale = "none", margins = c(4,4), col=rgb(palette/255))
+  dev.off()
+}
+
+
+calcR2Sequential <- function(){
+  R2 <- list()
+  for (i in which(sequential[,2] == 9)){
+    palette <- sequential[i:(i+8), 7:9]
+    pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+    cat(i, ": ", propVar(pca,1), "\n")
+    R2[[length(R2)+1]] <- propVar(pca,1)
+  }
+  return(R2)
+}
+
+
+calcPathLength <- function(){
+  plen <- array(dim=sum(sequential[,2] == 9, na.rm=TRUE))
+  p <- 1
+  for (i in which(sequential[,2] == 9)){
+    palette <- sequential[i:(i+8), 7:9]    
+    cat(i, ": ", getPathLength(palette), "\n")
+    plen[p] <- getPathLength(palette)
+    p <- p + 1
+  }
+  return(plen)
+}
+
+
+getPathLength <- function(palette){
+  pd <- apply(palette, 2, diff)
+  pl <- sqrt(apply(pd^2,1,sum))
+  return(sum(pl))  
+}
