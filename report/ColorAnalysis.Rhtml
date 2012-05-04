@@ -39,7 +39,7 @@ end.rcode-->
 
 One question I had was about the motion of a "visually attractive" color palette through the 3-dimensional space of all RGB values. My assumption was that most palettes can be represented as a straight line through this space.
 
-<div align="center" style="border: 1px solid #999; height: 436px; width: 510px;">
+<div align="center" style="border: 1px solid #999;">
 %rgbWebGL%
 An interactive visualization of palette #2 in 3-Dimensional RGB space
 </div>
@@ -48,7 +48,7 @@ An interactive visualization of palette #2 in 3-Dimensional RGB space
 
 One way to quantify this is to calculate the principal component of each palette, which represents the line in RGB space which best fits the palette. The R<sup>2</sup> value can then be used to quantify how well the data aligns to this component. An R<sup>2</sup> value of 1 indicates that the palette aligns perfectly to a straight line through RGB space. 
 
-<div align="center" style="border: 1px solid #999; height: 436px; width: 510px;">
+<div align="center" style="border: 1px solid #999;">
 %pcaWebGL%
 Palette #2 with the Principal Component. Note the curve of the palette around the component.
 </div>
@@ -218,7 +218,7 @@ This analysis answered a couple of questions for me. First, it showed that, in g
 
 <h3>Future Work</h3>
 
-Of course, aesthetics are not to only goal behind color palette selection. Generally, the goal of heatmaps such as these is to convey information. If no legend is given, we're hoping to convey relative "strengths" of some phenomena to the viewer. If a legend is given, we're additionally hoping to support some quantification to these data, as well. So merely determining which color palettes are best to look at will likely not be the most important consideration in determining which palettes to use. We should do further analysis to determine which palettes convey such information most efficiently, and then likely make some compromise between efficient communication and aesthetics, depending on the application.
+Of course, aesthetics are not the only goal behind color palette selection. Generally, the goal of heatmaps such as these is to convey information. If no legend is given, we're hoping to convey relative "strengths" of some phenomena to the viewer. If a legend is given, we're additionally hoping to support some quantification to these data, as well. So merely determining which color palettes are best to look at will likely not be the most important consideration in determining which palettes to use. We should do further analysis to determine which palettes convey such information most efficiently, and then likely make some compromise between efficient communication and aesthetics, depending on the application.
 
 <h3>Acknowledgements</h3>
 <ul>
