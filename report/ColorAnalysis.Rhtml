@@ -1,0 +1,280 @@
+<html>
+<head>
+  <title>Color Analysis</title>
+  <script type="text/javascript">
+    function startAllWebGL(){
+      rgbwebGLStart();
+      pcawebGLStart();
+    }
+  </script>
+
+</head>
+<body onload="startAllWebGL();">
+
+<h1>Color Analysis</h1>
+<p>Jeffrey D. Allen
+<p>Trestle Technology
+
+<h2>Introduction</h2>
+
+I've recently been interested in how to communicate information using color. I don't know much about the field of <a href = "http://en.wikipedia.org/wiki/Color_theory">Color Theory</a>, but it's an interesting topic to me. The selection of color palettes, in particular, has been a topic I've been faced with lately.
+
+<p>I downloaded 18 different sequential color palettes from Cynthia Brewer's <a href = "http://colorbrewer2.org/">ColorBrewer2</a> website to use as suggested color palettes. I was struck by the various movements through the spectrum of some of these palettes and wanted to poke around at quantifying some of that movement. This is the result of that analysis.
+
+<p>Using the 18 different sequential color palettes, I generated heatmaps to try to gauge the aesthetic appeal of each palette. Using Amazon's <a href ="https://www.mturk.com/mturk/welcome">Mechanical Turk</a>, I was able to ask workers to rate a palette on a scale from 1 to 5. I had each palette rated 20 times to generate a sufficient amount of data to start determining statistical significance. The 360 ratings were completed by 28 workers in a couple of hours.
+
+<p>This initial study didn't consider anything about how clear the heatmaps are, only how aesthetically pleasing they are. The 18 matrices in the 18 available palettes are displayed below.
+
+<!--begin.rcode fig.align='center', fig.width=7, fig.height=12
+source("../Correlation.R")
+source("loadPalettes.R")
+par(mfrow=c(6,3), mar=c(2,1,1,1))
+for (i in 1:18){
+  palette <- allSequential[[i]]
+  image(mat, col=rgb(palette/255), axes=FALSE, main=i)
+}
+end.rcode-->
+
+<h2>RGB-Space</h2>
+
+One question I had was about the motion of a "visually attractive" color palette through the 3-dimensional space of all RGB values. My assumption was that most palettes can be represented as a straight line through this space.
+
+<div align="center" style="border: 1px solid #999; height: 436px; width: 510px;">
+%rgbWebGL%
+An interactive visualization of palette #2 in 3-Dimensional RGB space
+</div>
+
+<h3>R<sup>2</sup> Values</h3>
+
+One way to quantify this is to calculate the principal component of each palette, which represents the line in RGB space which best fits the palette. The R<sup>2</sup> value can then be used to quantify how well the data aligns to this component. An R<sup>2</sup> value of 1 indicates that the palette aligns perfectly to a straight line through RGB space. 
+
+<div align="center" style="border: 1px solid #999; height: 436px; width: 510px;">
+%pcaWebGL%
+Palette #2 with the Principal Component. Note the curve of the palette around the component.
+</div>
+
+<!--begin.rcode
+#' Compute the proportion of variance accounted for by the given number of components
+#'
+#' @author Jeffrey D. Allen \email{Jeffrey.Allen@@UTSouthwestern.edu}
+propVar <- function(pca, components=1){
+  #proportion of variance explained by the first component
+  pv <- pca$sdev^2/sum(pca$sdev^2)[1] 
+  return(sum(pv[1:components]))
+}
+
+#' Calculate the R-squared values of all 18 color palettes
+#'
+#' @author Jeffrey D. Allen \email{Jeffrey.Allen@@UTSouthwestern.edu}
+calcR2Sequential <- function(){
+  library(rgl)
+  R2 <- list()
+  for (i in which(sequential[,2] == 9)){
+    palette <- sequential[i:(i+8), 7:9]
+    pca <-plotCols(palette$R,palette$G, palette$B, pca=1)
+    cat(i, ": ", propVar(pca,1), "\n")
+    R2[[length(R2)+1]] <- propVar(pca,1)
+  }
+  return(R2)
+}
+end.rcode-->
+
+<h3>Path Length</h3>
+
+An alternative way to consider the palette in RGB space is to consider the "length" of the palette through RGB space by simply calculating the distance between each color represented as a point in RGB space. My thought is that this may better capture the "movement" of a palette around this space. The R<sup>2</sup> value doesn't encompass any notion of how much space is covered by a palette, but only the arrangement of the colors relative to their principal component.
+
+<!--begin.rcode
+#' Calculate the path length for all sequential palettes.
+#'
+#' @author Jeffrey D. Allen \email{Jeffrey.Allen@@UTSouthwestern.edu}
+calcPathLength <- function(){
+  plen <- array(dim=sum(sequential[,2] == 9, na.rm=TRUE))
+  p <- 1
+  for (i in which(sequential[,2] == 9)){
+    palette <- sequential[i:(i+8), 7:9]    
+    cat(i, ": ", getPathLength(palette), "\n")
+    plen[p] <- getPathLength(palette)
+    p <- p + 1
+  }
+  return(plen)
+}
+
+#' Calculate the length of a path through RGB space of a given palette.
+#'
+#' Sums the distance from all adjacent colors.
+#' @author Jeffrey D. Allen \email{Jeffrey.Allen@@UTSouthwestern.edu}
+getPathLength <- function(palette){
+  pd <- apply(palette, 2, diff)
+  pl <- sqrt(apply(pd^2,1,sum))
+  return(sum(pl))  
+}
+end.rcode-->
+
+<h3>Comparison</h3>
+
+Let's compare the R<sup>2</sup> values to the path length values
+
+<!--begin.rcode cache=TRUE, fig.align='center'
+r2 <- calcR2Sequential()
+r2 <- unlist(r2)
+names(r2) <- 1:18
+
+pl <- calcPathLength()
+
+plot(r2~pl,main="Path Length vs. R-Squared Value", xlab="Path Length", ylab="R-Squared Value")
+abline(lm(r2~pl), col=2)
+pv <- anova(lm(r2~pl))$"Pr(>F)"[1]
+end.rcode-->
+
+The p-value (<!--rinline pv -->) is significant in the negative correlation between the two variables, meaning that, as expected, the closer the palette stays to its principal component, the shorter the path through RGB space is (on average). So either scheme could be used to quantify a palette's non-linearity.
+
+<h2>Color Ratings</h2>
+
+The output of the Mechanical Turk trial is available in a stored file in this project. We'll read it in and filter out the peripheral information.
+
+<!--begin.rcode
+colorPreference <- read.csv("../turk/output/Batch_790445_batch_results.csv", header=TRUE, stringsAsFactors=FALSE)
+colorPreference <- colorPreference[,28:29]
+colorPreference[,1] <- substr(colorPreference[,1], 44, 100)
+colorPreference[,1] <- substr(colorPreference[,1],0,nchar(colorPreference[,1])-4)
+colnames(colorPreference) <- c("palette", "rating")
+
+prefList <- split(colorPreference[,2], colorPreference[,1])
+prefList <- prefList[order(as.integer(names(prefList)))]
+end.rcode-->
+
+We can then visualize the results, as well.
+
+<!--begin.rcode fig.align='center', fig.width=8
+boxplot(prefList, main="Ratings of Color Palettes", xlab="Palette Number", ylab="Rating")
+
+avgs <- sapply(prefList,mean)
+end.rcode-->
+
+We can then check to see if there's a significant association between the palette and the rating of the palette, or if we've just got noise.
+
+<!--begin.rcode
+fit <- anova(lm(colorPreference[,2] ~ as.factor(colorPreference[,1])))
+pv <- (fit$"Pr(>F)")[1]
+end.rcode-->
+
+With a p-value of <!--rinline pv -->, you can see that there is a significant difference between the different palettes.
+
+<p>We can list out the most attractive palettes in order, as well:
+
+<!--begin.rcode
+sort(sapply(prefList, mean), decreasing=TRUE)
+end.rcode-->
+
+So the palettes, in order of visual appeal are:
+
+<!--begin.rcode fig.align='center', fig.width=7, fig.height=12
+par(mfrow=c(6,3), mar=c(2,1,1,1))
+for (i in order(avgs,decreasing=TRUE)){
+  palette <- allSequential[[i]]
+  image(mat, col=rgb(palette/255), axes=FALSE, main=i)
+}
+end.rcode-->
+
+<h3>Warm Palettes</h3>
+
+The first thing I noticed was that the cooler palettes were rated more highly than the warmer palettes. To try to quantify this, we can plot out the "redness" (the strenght of the red channel in each palette) against the average rating.
+
+<!--begin.rcode fig.align='center'
+redness <- apply(sapply(allSequential, "[[", "R"),2,mean)
+plot(avgs~redness,main="Warmth of Palette vs. Aesthetic Appeal", xlab="\"Redness\"", ylab="Average Aesthetic Rating")
+abline(lm(avgs~redness), col=2)
+pv <- anova(lm(avgs~redness))$"Pr(>F)"[1]
+end.rcode-->
+
+Indeed, the p-value of this correlation is significant for this data (<!--rinline pv -->) indicating that -- among these palettes and in this context -- cooler palettes are more visually appealing.
+
+<h3>R<sup>2</sup> Values</h3>
+
+We can calculate the R<sup>2</sup> values for each palette as previously discussed and compare to see if it's associated with the aesthetic appeal of a palette.
+
+<!--begin.rcode fig.align='center'
+
+r2
+
+plot(avgs~r2, main="Linearity of Color Palette vs. Aesthetic Appeal", xlab="R-squared Value", ylab="Average Aesthetic Rating")
+abline(lm(avgs~r2), col=4)
+
+pv <- anova(lm(avgs~r2))$"Pr(>F)"[1]
+
+end.rcode-->
+
+Again, the p-value of this association is significant (<!--rinline pv -->). So it seems that adhering a color spectrum to a straight line through RGB-space is visually appealing.
+
+<p>Similarly, for the path length, the p-value is significant (though not as strongly as with the R<sup>2</sup> values).
+
+<!--begin.rcode
+anova(lm(avgs~pl))$"Pr(>F)"[1]
+end.rcode-->
+
+<h2>Summary</h2>
+
+This analysis answered a couple of questions for me. First, it showed that, in general, linear paths through RGB space create more aesthetically pleasing color palettes. Second, it demonstrated that, in this narrow study, palettes with cooler color schemes were preferred as more "aesthetically pleasing." Finally, it gave some concrete recommendations regarding which of the available color palettes to use if the goal is purely aesthetic.
+
+<h3>Future Work</h3>
+
+Of course, aesthetics are not to only goal behind color palette selection. Generally, the goal of heatmaps such as these is to convey information. If no legend is given, we're hoping to convey relative "strengths" of some phenomena to the viewer. If a legend is given, we're additionally hoping to support some quantification to these data, as well. So merely determining which color palettes are best to look at will likely not be the most important consideration in determining which palettes to use. We should do further analysis to determine which palettes convey such information most efficiently, and then likely make some compromise between efficient communication and aesthetics, depending on the application.
+
+<h3>Acknowledgements</h3>
+<ul>
+<li>All analysis done in <a href = "http://www.r-project.org/">R</a></li>
+<li>All ratings generated using <a href = "https://www.mturk.com/mturk/welcome">Amazon Mechanical Turk</a></li>
+<li>Interactive 3D graphics generated using <a href = "http://r-forge.r-project.org/projects/rgl">rgl version 0.92.879</a></li>
+<li>Report generated using <a href = "http://yihui.name/knitr/">knitr</a></li>
+<li>Code hosted by <a href = "http://github.com">GitHub</a></li>
+<li>Color palettes obtained from Cynthia Brewer's <a href = "http://colorbrewer2.org/">ColorBrewer2.0</a> service</li>
+</ul>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
