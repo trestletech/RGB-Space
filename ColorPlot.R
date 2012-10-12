@@ -33,7 +33,7 @@ plotCols <- function(red,green,blue,pca=0, col=rgb(red/255, green/255, blue/255)
   
   plot3d(red, green, blue,           
          type="p", add=TRUE, pch=19, size=6, col=col, ...)
-
+  
   X <- cbind(red,green,blue)
   #from Hans Borchers, http://r.789695.n4.nabble.com/Fit-a-3-Dimensional-Line-to-Data-Points-td863596.html
   N <- nrow(X) 
@@ -62,7 +62,68 @@ plotCols <- function(red,green,blue,pca=0, col=rgb(red/255, green/255, blue/255)
   }
   
   view3d(-100, 20, zoom=1.1)
-         
+  
+  writeWebGL(dir=file.path(tempdir(), "webGL"), width=500)
+  return(Xpca)
+}
+
+
+plotLuvCols <- function(l,c,h,pca=0, col=hex(polarLUV(l,c,h)), ...){  
+  
+  hueRange <- diff(range(h))
+  newHue <- h
+  #shift by 90 degrees to see if the range gets smaller. If so, that implies that
+  # perhaps the initial range was spanning the border from 360-0
+  for (i in seq(0,330, by=30)){
+    h2 <- h + i
+    h2[h2 >= 360] <- h2[h2 >= 360] - 360
+    h2Range <- diff(range(h2))
+    if (h2Range < hueRange){
+      hueRange <- h2Range
+      newHue <- h2
+    }
+  }
+  
+  col <- col
+  
+  h <- newHue
+  
+  plot3d(l, c, h,          
+         xlab="L", ylab="C", zlab="H", 
+         type="l", lwd=2, col=col, xlim=c(0,100), ylim=c(0,160), zlim=c(0,360),...)
+  
+  plot3d(l, c, h,           
+         type="p", add=TRUE, pch=19, size=6, col=col, ...)
+  
+  X <- cbind(l,c,h)
+  #from Hans Borchers, http://r.789695.n4.nabble.com/Fit-a-3-Dimensional-Line-to-Data-Points-td863596.html
+  N <- nrow(X) 
+  
+  meanX <- apply(X, 2, mean) 
+  Xpca   <- princomp(X) 
+  
+  if (pca==TRUE){
+    pca <- 1
+  }
+  
+  if (pca){
+    endpts <- list()
+    for (pc in 1:pca){    
+      dirVector <- Xpca$loadings[, pc] 
+      t <- c(min(Xpca$score[, pc])-.2, max(Xpca$score[, pc])+.2) 
+      endpts[[pc]] <- rbind(meanX + t[1]*dirVector, meanX + t[2]*dirVector)     
+    }
+    
+    for (pc in 1:pca){  
+      plot3d(endpts[[pc]][,1], endpts[[pc]][,2], endpts[[pc]][,3], type="l", add=TRUE, aspect=FALSE)
+    }
+    
+    pv <- propVar(Xpca, pca)
+    text3d(50,50,250, paste("R2 = ", round(pv,4), sep=""), aspect=FALSE)
+  }
+  
+  view3d(-100, 20, zoom=1.1)
+  
   writeWebGL(dir=file.path(tempdir(), "webGL"), width=500)
   return(Xpca)
 }

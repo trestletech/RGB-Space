@@ -134,5 +134,11 @@ RGBToLuv <- function(r, g, b){
     }
     col <- RGB(r, g, b)
   }
-  as(col, "polarLUV")
+  
+  #black doesn't convert to polarLUV correctly, manually check
+  black <- which(hex(col) == "#000000")
+  
+  col <- as(col, "polarLUV")
+  col@coords[black,] <- c(0, 0, mean(col@coords[-black,"H"]))
+  col@coords
 }
