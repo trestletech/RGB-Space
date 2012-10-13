@@ -206,6 +206,7 @@ mat <- mat - 1
 
 mat <- mat*4.2
 mat[mat<0] <- 0
+mat <- mat+1
 
 for(i in 1:length(allSequential)){
   palette <- interpolateNewPalette(18, allSequential[[i]])
