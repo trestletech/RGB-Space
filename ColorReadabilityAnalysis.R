@@ -1,4 +1,4 @@
-acc <- read.csv("turk/output/Batch_790470_batch_results.csv", header=TRUE, stringsAsFactors=FALSE)
+acc <- read.csv("turk/output/Batch_933667_batch_results.csv", header=TRUE, stringsAsFactors=FALSE)
 acc <- acc[,28:31]
 acc[,1] <- substr(acc[,1], 48, 100)
 acc[,1] <- substr(acc[,1],0,nchar(acc[,1])-4)
