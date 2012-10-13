@@ -204,8 +204,11 @@ mat[,4] <- mat[4,]
 mat[,5] <- mat[5,]
 mat <- mat - 1
 
+mat <- mat*4.2
+mat[mat<0] <- 0
+
 for(i in 1:length(allSequential)){
-  palette <- allSequential[[i]]
+  palette <- interpolateNewPalette(18, allSequential[[i]])
   png(filename=paste("palette-sym/palette-", i,".png", sep=""),
       width = 620, height = 620, units = "px",
       pointsize = 12, bg = "white")
@@ -213,6 +216,20 @@ for(i in 1:length(allSequential)){
   dev.off()
 }
 
+
+interpolateNewPalette <- function(n, palette){
+  newPalette <- data.frame(matrix(NA, nrow=n, ncol=ncol(palette)))
+  for (colIndex in 1:ncol(palette)){
+    rspline <- smooth.spline(1:nrow(palette), palette[,colIndex], w=c(1,rep(.1, nrow(palette)-2), 1))
+    newPalette[,colIndex] <- predict(rspline, seq(1, nrow(palette),length.out=n))$y
+    
+    #limit to [0,255]
+    newPalette[newPalette[,colIndex]>255,colIndex] <- 255
+    newPalette[newPalette[,colIndex]<0,colIndex] <- 0
+  }
+  colnames(newPalette) <- colnames(palette)
+  newPalette
+}
 
 calcR2Sequential <- function(){
   R2 <- list()

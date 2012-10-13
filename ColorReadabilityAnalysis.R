@@ -16,11 +16,11 @@ for (i in 1:nrow(acc)){
   delta[i] <- abs(as.numeric(thisRow$answer) - mat[thisRow$x, thisRow$y])
 }
 
-response <- read.csv("turk/output/Batch_790470_batch_results.csv", header=TRUE, stringsAsFactors=FALSE)
+response <- read.csv("turk/output/Batch_933667_batch_results.csv", header=TRUE, stringsAsFactors=FALSE)
 
 
-response$Reject[which(is.na(delta))] <- "You must provide a two digit response with no other data, such as \"1.1\" or \"2.5\". You cannot provide two different values, a range of values, or leave the field blank."
-response$Reject[which(delta>1)] <- "The value you provided is too far away from the expected value. Please read the instructions carefully to understand how to read the heatmap before entering data."
+response$Reject[which(is.na(delta))] <- "You must provide an integer response with no other data, such as \"1\" or \"15\". You cannot provide two different values, a range of values, or leave the field blank."
+response$Reject[which(delta>4)] <- "The value you provided is too far away from the expected value. Please read the instructions carefully to understand how to read the heatmap before entering data."
 
 
 response$Approve[is.na(response$Reject)] <- "x"
@@ -66,6 +66,7 @@ redness <- apply(sapply(allSequential, "[[", "R"),2,mean)
 anova(lm(delta~redness))$"Pr(>F)"
 plot(delta~redness)
 abline(lm(delta~redness), col=3)
+
 
 plot(avgs, delta, type="n", xlab="Aesthetics", ylab="Average error")
 text(avgs, delta, 1:18)
