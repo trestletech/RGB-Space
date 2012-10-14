@@ -1,0 +1,52 @@
+<html>
+<head>
+  <title>Color Analysis</title>
+  <script type="text/javascript">
+    function startAllWebGL(){
+      rgbwebGLStart();
+      pcawebGLStart();
+    }
+  </script>
+
+</head>
+<body onload="startAllWebGL();">
+
+<h2>Introduction</h2>
+
+<h2>Analysis</h2>
+
+<h3>Load Data</h3>
+
+In a separate file, we've created the functions needed to read in and parse the results from the turk experiments. We'll execute this file to calculate the delta (error) value in each experiment. One shortcoming of conducting an experiment on Mechanical Turk is that it can be difficult to filter our the honest attempts at completing the experiment from fraudulent attempts just aiming to complete the tasks as quickly as possible. With this in mind, I decided that an entered value more than 4 away from the true answer would be labeled as "fraudulent" and rejected; so we'll see no attempts further than 4 away from the truth.
+
+We'll also load in the truth matrix from which the figures for all experiments were generated.
+
+<!--begin.rcode fig.align='center', fig.width=7, fig.height=12
+mat <- readRDS("../hifimat.Rds")
+source("ColorReadabilityAnalysis.R")
+acc <- turkResults$acc
+delta <- turkResults$delta
+str(delta)
+end.rcode-->
+
+You can see the structure of the data here; we have approximately 60 values for all 18 palettes. These values represent the difference between the value entered by the "worker" and the true value used to generate the figure.
+
+<h3>Analysis of Variance</h3>
+
+The first thing we'll want to check is whether or not there's a meaningful difference between these different palettes. We can compute the p-value to check:
+
+<!--begin.rcode fig.align='center'
+boxplot(delta, xlab="Palette #", ylab="Error", main="Error for each Palette")
+pv <- anova(lm(acc$delta~as.factor(acc$palette)))$"Pr(>F)"[1]
+end.rcode-->
+
+With a p-value of <!--rinline round(pv,3) -->, it appears there is a meaningful difference between the palettes. The boxplot is a bit busy for my liking; perhaps another way to view the data would be to create a simple barplot of the average error for any palette.
+
+<!--begin.rcode fig.align='center'
+delta <- sapply(delta, mean)
+barplot(delta, xlab="Palette #", ylab="Average (mean) Error", main="Average Error for each Palette")
+end.rcode-->
+
+
+</body>
+</html>

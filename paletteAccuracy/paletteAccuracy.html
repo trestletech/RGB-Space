@@ -1,0 +1,166 @@
+<html>
+<head>
+<style type="text/css">.knitr.inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}, 
+.warning {
+	font-weight: bold;
+} 
+.message {
+	font-style: italic;
+} 
+.source, .output, .warning, .error, .message {
+	padding: 0em 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f7f7f7;
+}
+.rimage.left {
+  text-align: left;
+}
+.rimage.right {
+  text-align: right;
+}
+.rimage.center {
+  text-align: center;
+}
+
+.source {
+  color: #333333;
+}
+.background {
+  color: #F7F7F7;
+}
+
+.number {
+  color: #000000;
+}
+
+.functioncall {
+  color: #800054;
+  font-weight: bolder;
+}
+
+.string {
+  color: #9999FF;
+}
+
+.keyword {
+  font-weight: bolder;
+  color: black;
+}
+
+.argument {
+  color: #B04005;
+}
+
+.comment {
+  color: #2E9957;
+}
+
+.roxygencomment {
+  color: #707AB3;
+}
+
+.formalargs {
+  color: #B04005;
+}
+
+.eqformalargs {
+  color: #B04005;
+}
+
+.assignement {
+  font-weight: bolder;
+  color: #000000;
+}
+
+.package {
+  color: #96B525;
+}
+
+.slot {
+  font-style: italic;
+}
+
+.symbol {
+  color: #000000;
+}
+
+.prompt {
+  color: #333333;
+}
+</style>
+  <title>Color Analysis</title>
+  <script type="text/javascript">
+    function startAllWebGL(){
+      rgbwebGLStart();
+      pcawebGLStart();
+    }
+  </script>
+
+</head>
+<body onload="startAllWebGL();">
+
+<h2>Introduction</h2>
+
+<h2>Analysis</h2>
+
+<h3>Load Data</h3>
+
+In a separate file, we've created the functions needed to read in and parse the results from the turk experiments. We'll execute this file to calculate the delta (error) value in each experiment. One shortcoming of conducting an experiment on Mechanical Turk is that it can be difficult to filter our the honest attempts at completing the experiment from fraudulent attempts just aiming to complete the tasks as quickly as possible. With this in mind, I decided that an entered value more than 4 away from the true answer would be labeled as "fraudulent" and rejected; so we'll see no attempts further than 4 away from the truth.
+
+We'll also load in the truth matrix from which the figures for all experiments were generated.
+
+<div class="chunk"><div class="rcode"><div class="source"><pre class="knitr r">mat &lt;- <span class="functioncall">readRDS</span>(<span class="string">"../hifimat.Rds"</span>)
+<span class="functioncall">source</span>(<span class="string">"ColorReadabilityAnalysis.R"</span>)
+</pre></div><div class="warning"><pre class="knitr r">## Warning: NAs introduced by coercion
+</pre></div><div class="warning"><pre class="knitr r">## Warning: NAs introduced by coercion
+</pre></div><div class="source"><pre class="knitr r">acc &lt;- turkResults$acc
+delta &lt;- turkResults$delta
+<span class="functioncall">str</span>(delta)
+</pre></div><div class="output"><pre class="knitr r">## List of 18
+##  $ 1 : num [1:60] 1.9796 0.9796 2.9796 0.0976 0.0976 ...
+##  $ 2 : num [1:61] 0.9796 0.0204 1.9796 0.0976 2.9024 ...
+##  $ 3 : num [1:60] 0.9796 0.0204 0.9796 0.9024 2.9024 ...
+##  $ 4 : num [1:59] 1.9796 1.9796 0.9796 0.0976 1.0976 ...
+##  $ 5 : num [1:59] 1.9796 1.9796 0.0204 3.0976 1.0976 ...
+##  $ 6 : num [1:58] 1.98 0.98 1.98 1.1 1.9 ...
+##  $ 7 : num [1:59] 1.9796 0.9796 0.0204 1.0976 1.0976 ...
+##  $ 8 : num [1:60] 1.98 1.98 1.02 0.902 1.098 ...
+##  $ 9 : num [1:61] 0.98 1.98 0.98 3.1 2.1 ...
+##  $ 10: num [1:60] 1.98 0.98 0.98 2.1 1.1 ...
+##  $ 11: num [1:60] 0.98 0.98 0.98 0.902 0.902 ...
+##  $ 12: num [1:61] 1.98 0.98 1.98 1.1 2.1 ...
+##  $ 13: num [1:61] 1.98 0.98 0.98 1.1 1.1 ...
+##  $ 14: num [1:60] 1.98 1.98 1.98 1.902 0.902 ...
+##  $ 15: num [1:60] 1.98 0.98 1.02 1.9 1.1 ...
+##  $ 16: num [1:60] 1.98 0.98 0.98 2.1 1.1 ...
+##  $ 17: num [1:60] 0.9796 0.0204 0.9796 1.9024 1.0976 ...
+##  $ 18: num [1:60] 1.9796 1.9796 1.9796 1.0976 0.0976 ...
+</pre></div></div></div>
+
+
+You can see the structure of the data here; we have approximately 60 values for all 18 palettes. These values represent the difference between the value entered by the "worker" and the true value used to generate the figure.
+
+<h3>Analysis of Variance</h3>
+
+The first thing we'll want to check is whether or not there's a meaningful difference between these different palettes. We can compute the p-value to check:
+
+<div class="chunk"><div class="rcode"><div class="source"><pre class="knitr r"><span class="functioncall">boxplot</span>(delta)
+</pre></div></div><div class="rimage center"><img src="figure/unnamed-chunk-2.png"  class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r">pv &lt;- <span class="functioncall">anova</span>(<span class="functioncall">lm</span>(acc$delta ~ <span class="functioncall">as.factor</span>(acc$palette)))$<span class="string">"<span class="functioncall">Pr</span>(&gt;F)"</span>[1]
+</pre></div></div></div>
+
+
+With a p-value of <code class="knitr inline">0.034</code>, it appears there is a meaningful difference between the palettes.
+
+
+</body>
+</html>
