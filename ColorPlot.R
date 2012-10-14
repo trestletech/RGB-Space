@@ -218,6 +218,10 @@ for(i in 1:length(allSequential)){
 }
 
 
+#' Interpolate any number of colors from a provided color palette
+#' @param n The number of colors desired in the new palette
+#' @param palette a data.frame or matrix with each color occupying one row, and the columns being different color dimensions (RGB, HCL, etc.)
+#' @return A data.frame with the same columns as the provided palette but with n interpolated rows representing n colors.
 interpolateNewPalette <- function(n, palette){
   newPalette <- data.frame(matrix(NA, nrow=n, ncol=ncol(palette)))
   for (colIndex in 1:ncol(palette)){

@@ -110,6 +110,37 @@
 
 <h2>Introduction</h2>
 
+<h3>Method</h3>
+
+I randomly generated a symmetric matrix and plotted it out as a heatmap using each of the 18 color palettes. I provided a legend next to each heatmap to provide a numeric interpretation of the data as shown below.
+
+<div class="rimage center"><img src="figure/palette-14.png"  class="plot" /></div>
+
+I found initially that a 9-color palette didn't have enough variation to generate sufficiently interesting differences between them, so I interpolated 9 extra colors for each palette using the following function.
+
+<div class="chunk"><div class="rcode"><div class="source"><pre class="knitr r"><span class="comment">#' Interpolate any number of colors from a provided color palette</span>
+<span class="comment">#' @param n The number of colors desired <span class="keyword">in</span> the new palette</span>
+#' @param palette a data.frame or matrix with each color occupying one row, and the columns being different color <span class="functioncall">dimensions</span> (RGB, HCL, etc.)
+<span class="comment">#' @return A data.frame with the same columns as the provided palette but with n interpolated rows representing n colors.</span>
+interpolateNewPalette &lt;- <span class="functioncall"><span class="keyword">function</span></span>(n, palette) {
+    newPalette &lt;- <span class="functioncall">data.frame</span>(<span class="functioncall">matrix</span>(<span class="keyword">NA</span>, nrow = n, ncol = <span class="functioncall">ncol</span>(palette)))
+    <span class="functioncall"><span class="keyword">for</span></span> (colIndex <span class="keyword">in</span> 1:<span class="functioncall">ncol</span>(palette)) {
+        rspline &lt;- <span class="functioncall">smooth.spline</span>(1:<span class="functioncall">nrow</span>(palette), palette[, colIndex], w = <span class="functioncall">c</span>(1, 
+            <span class="functioncall">rep</span>(0.1, <span class="functioncall">nrow</span>(palette) - 2), 1))
+        newPalette[, colIndex] &lt;- <span class="functioncall">predict</span>(rspline, <span class="functioncall">seq</span>(1, <span class="functioncall">nrow</span>(palette), length.out = n))$y
+        
+        <span class="comment"># limit to [0,255]</span>
+        newPalette[newPalette[, colIndex] &gt; 255, colIndex] &lt;- 255
+        newPalette[newPalette[, colIndex] &lt; 0, colIndex] &lt;- 0
+    }
+    <span class="functioncall">colnames</span>(newPalette) &lt;- <span class="functioncall">colnames</span>(palette)
+    newPalette
+}
+</pre></div></div></div>
+
+
+This provided a sufficient level of detail to allow for some meainingful errors when reading these heatmaps.
+
 <h2>Analysis</h2>
 
 <h3>Load Data</h3>
@@ -153,13 +184,17 @@ You can see the structure of the data here; we have approximately 60 values for 
 
 The first thing we'll want to check is whether or not there's a meaningful difference between these different palettes. We can compute the p-value to check:
 
-<div class="chunk"><div class="rcode"><div class="source"><pre class="knitr r"><span class="functioncall">boxplot</span>(delta)
-</pre></div></div><div class="rimage center"><img src="figure/unnamed-chunk-2.png"  class="plot" /></div><div class="rcode">
+<div class="chunk"><div class="rcode"><div class="source"><pre class="knitr r"><span class="functioncall">boxplot</span>(delta, xlab = <span class="string">"Palette #"</span>, ylab = <span class="string">"Error"</span>, main = <span class="string">"Error <span class="keyword">for</span> each Palette"</span>)
+</pre></div></div><div class="rimage center"><img src="figure/unnamed-chunk-3.png"  class="plot" /></div><div class="rcode">
 <div class="source"><pre class="knitr r">pv &lt;- <span class="functioncall">anova</span>(<span class="functioncall">lm</span>(acc$delta ~ <span class="functioncall">as.factor</span>(acc$palette)))$<span class="string">"<span class="functioncall">Pr</span>(&gt;F)"</span>[1]
 </pre></div></div></div>
 
 
-With a p-value of <code class="knitr inline">0.034</code>, it appears there is a meaningful difference between the palettes.
+With a p-value of <code class="knitr inline">0.034</code>, it appears there is a meaningful difference between the palettes. The boxplot is a bit busy for my liking; perhaps another way to view the data would be to create a simple barplot of the average error for any palette.
+
+<div class="chunk"><div class="rcode"><div class="source"><pre class="knitr r">delta &lt;- <span class="functioncall">sapply</span>(delta, mean)
+<span class="functioncall">barplot</span>(delta, xlab = <span class="string">"Palette #"</span>, ylab = <span class="string">"<span class="functioncall">Average</span> (mean) Error"</span>, main = <span class="string">"Average Error <span class="keyword">for</span> each Palette"</span>)
+</pre></div></div><div class="rimage center"><img src="figure/unnamed-chunk-4.png"  class="plot" /></div></div>
 
 
 </body>

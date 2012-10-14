@@ -13,6 +13,39 @@
 
 <h2>Introduction</h2>
 
+
+
+
+<h3>Method</h3>
+
+I randomly generated a symmetric matrix and plotted it out as a heatmap using each of the 18 color palettes. I provided a legend next to each heatmap to provide a numeric interpretation of the data as shown below.
+
+<div class="rimage center"><img src="figure/palette-14.png"  class="plot" /></div>
+
+I found initially that a 9-color palette didn't have enough variation to generate sufficiently interesting differences between them, so I interpolated 9 extra colors for each palette using the following function.
+
+<!--begin.rcode
+#' Interpolate any number of colors from a provided color palette
+#' @param n The number of colors desired in the new palette
+#' @param palette a data.frame or matrix with each color occupying one row, and the columns being different color dimensions (RGB, HCL, etc.)
+#' @return A data.frame with the same columns as the provided palette but with n interpolated rows representing n colors.
+interpolateNewPalette <- function(n, palette){
+  newPalette <- data.frame(matrix(NA, nrow=n, ncol=ncol(palette)))
+  for (colIndex in 1:ncol(palette)){
+    rspline <- smooth.spline(1:nrow(palette), palette[,colIndex], w=c(1,rep(.1, nrow(palette)-2), 1))
+    newPalette[,colIndex] <- predict(rspline, seq(1, nrow(palette),length.out=n))$y
+    
+    #limit to [0,255]
+    newPalette[newPalette[,colIndex]>255,colIndex] <- 255
+    newPalette[newPalette[,colIndex]<0,colIndex] <- 0
+  }
+  colnames(newPalette) <- colnames(palette)
+  newPalette
+}
+end.rcode-->
+
+This provided a sufficient level of detail to allow for some meainingful errors when reading these heatmaps.
+
 <h2>Analysis</h2>
 
 <h3>Load Data</h3>
@@ -23,7 +56,7 @@ We'll also load in the truth matrix from which the figures for all experiments w
 
 <!--begin.rcode fig.align='center', fig.width=7, fig.height=12
 mat <- readRDS("../hifimat.Rds")
-source("ColorReadabilityAnalysis.R")
+suppressWarnings(source("ColorReadabilityAnalysis.R"))
 acc <- turkResults$acc
 delta <- turkResults$delta
 str(delta)
@@ -46,7 +79,6 @@ With a p-value of <!--rinline round(pv,3) -->, it appears there is a meaningful 
 delta <- sapply(delta, mean)
 barplot(delta, xlab="Palette #", ylab="Average (mean) Error", main="Average Error for each Palette")
 end.rcode-->
-
 
 </body>
 </html>
