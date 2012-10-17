@@ -109,6 +109,14 @@ end.rcode-->
 
 We can now fairly simply compute the color read by the user and calculate the difference between the color that was actually depicted.
 
+<!--begin.rcode
+library(colorspace)
+for(i in 1:nrow(acc)){
+  thisAcc <- acc[i,]
+  trueColor <- numToColor(mat[thisAcc$x, thisAcc$y], interpolateNewPalette(18, allSequential[[as.numeric(thisAcc$palette)]]))
+  
+}
+end.rcode-->
 
 
 </body>
