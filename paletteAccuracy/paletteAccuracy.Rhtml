@@ -57,6 +57,7 @@ We'll also load in the truth matrix from which the figures for all experiments w
 <!--begin.rcode fig.align='center', fig.width=7, fig.height=12
 mat <- readRDS("../hifimat.Rds")
 suppressWarnings(source("ColorReadabilityAnalysis.R"))
+source("PAColorPlot.R")
 acc <- turkResults$acc
 delta <- turkResults$delta
 str(delta)
@@ -81,6 +82,34 @@ barplot(delta, xlab="Palette #", ylab="Average (mean) Error", main="Average Erro
 end.rcode-->
 
 Clearly, there are some palettes which communicate this information much more clearly than others. We can now begin trying to uncover what similarities the "effective" palettes have or what features make a color palette conducive for conveying information in this format.
+
+<h3>Color Delta</h3>
+
+One aspect we could consider is the difference between the color displayed, and the color associated with the number the user entered. This could provide some insight into which dimensions of the color palette are least accureately percieved by users.
+
+We'll want to start by creating a function that's able to lookup a color based on the number entered.
+
+<!--begin.rcode
+numToColor <- function(num, palette, range=c(1,18)){
+  norm <- (num-min(range))/diff(range)
+  
+  norm <- round(norm * nrow(palette))
+  
+  return(palette[norm,])
+}
+end.rcode-->
+
+We'll then add a function that can calculate the difference on each dimension between two colors:
+
+<!--begin.rcode
+colorDiff <- function(col1, col2){
+  return(abs(col2-col1))
+}
+end.rcode-->
+
+We can now fairly simply compute the color read by the user and calculate the difference between the color that was actually depicted.
+
+
 
 </body>
 </html>
